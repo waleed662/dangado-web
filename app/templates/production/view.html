@@ -1,0 +1,112 @@
+{% extends 'layout.html' %}
+
+{% block title %}Production Details | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('production.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Production Details</h1>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Production Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Production ID:</th>
+                            <td>{{ production.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Production Date:</th>
+                            <td>{{ production.production_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Product:</th>
+                            <td>{{ production.product.product_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Category:</th>
+                            <td>{{ production.product.category }}</td>
+                        </tr>
+                        <tr>
+                            <th>Quantity Produced:</th>
+                            <td>{{ production.quantity_produced // 12 }} dozens ({{ production.quantity_produced }} units)</td>
+                        </tr>
+                        <tr>
+                            <th>Production Value:</th>
+                            <td>₦{{ "{:,.2f}".format(production.product.price * production.quantity_produced) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created On:</th>
+                            <td>{{ production.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('products.view', id=production.product.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-box-seam"></i> View Product
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Stock Impact</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center py-4">
+                                    <h6 class="text-muted mb-2">Before Production</h6>
+                                    <h2 class="mb-0">
+                                        {{ (production.product.stock_quantity - production.quantity_produced) // 12 }}
+                                    </h2>
+                                    <p class="mb-0">dozens</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-success text-white mb-3">
+                                <div class="card-body text-center py-4">
+                                    <h6 class="text-white-50 mb-2">After Production</h6>
+                                    <h2 class="mb-0">
+                                        {{ production.product.stock_quantity // 12 }}
+                                    </h2>
+                                    <p class="mb-0">dozens</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill"></i> This production record added <strong>{{ production.quantity_produced // 12 }} dozens</strong> to the stock of {{ production.product.product_name }}.
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Current Stock Level:</h6>
+                        <div class="progress" style="height: 25px;">
+                            {% set stock_pct = (production.product.stock_quantity / 480) * 100 if production.product.stock_quantity < 480 else 100 %}
+                            {% set stock_class = 'bg-danger' if stock_pct < 25 else ('bg-warning' if stock_pct < 50 else 'bg-success') %}
+                            <div class="progress-bar {{ stock_class }}" role="progressbar" style="width: {{ stock_pct }}%;" 
+                                aria-valuenow="{{ stock_pct }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ production.product.stock_quantity // 12 }} dozens
+                            </div>
+                        </div>
+                        <small class="text-muted">Stock level based on minimum recommended inventory (40 dozens)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

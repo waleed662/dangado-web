@@ -1,0 +1,230 @@
+{% extends 'layout.html' %}
+
+{% block title %}Inventory Report | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Inventory Report</h1>
+        
+        <div class="ms-auto">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Printable Report Content -->
+    <div id="printable-report">
+        <!-- Report Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>DANGADO PLASTICS LTD</h3>
+                        <p class="mb-0">No: 16B Sharada Industrial Phase III, Plot: 3 Kano.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h4>INVENTORY REPORT</h4>
+                        <p class="mb-0">{{ now.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Inventory Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h5 class="border-bottom pb-2 mb-3">Inventory Summary</h5>
+                        <div class="row mb-3">
+                            <div class="col-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Total Products</div>
+                                        <div class="h4 mb-0">{{ products|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Total Units</div>
+                                        <div class="h4 mb-0">{{ products|sum(attribute='stock_quantity') // 12 }} dzn</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Low Stock Items</div>
+                                        <div class="h4 mb-0">{{ products|selectattr('stock_quantity', 'lt', 120)|list|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <h5 class="border-bottom pb-2 mb-3">Category Distribution</h5>
+                        <canvas id="categoryChart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Inventory Listing by Category -->
+                {% for category, products_list in categories.items() %}
+                <h5 class="border-bottom pb-2 mb-3">{{ category }} Products</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Product Name</th>
+                                <th>Price</th>
+                                <th>Stock (Dozens)</th>
+                                <th>Stock Value</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products_list %}
+                            <tr>
+                                <td>{{ product.id }}</td>
+                                <td>{{ product.product_name }}</td>
+                                <td>₦{{ "{:,.2f}".format(product.price) }}</td>
+                                <td>{{ product.stock_quantity // 12 }}</td>
+                                <td>₦{{ "{:,.2f}".format(product.price * product.stock_quantity) }}</td>
+                                <td>
+                                    {% if product.stock_quantity < 60 %}
+                                    <span class="badge bg-danger">Critical</span>
+                                    {% elif product.stock_quantity < 120 %}
+                                    <span class="badge bg-warning">Low</span>
+                                    {% else %}
+                                    <span class="badge bg-success">In Stock</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3">Subtotal</th>
+                                <th>{{ products_list|sum(attribute='stock_quantity') // 12 }} dzn</th>
+                                <th>₦{{ "{:,.2f}".format(products_list|map(attribute='price,stock_quantity')|map('product')|sum) }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% endfor %}
+                
+                <!-- Low Stock Items -->
+                <h5 class="border-bottom pb-2 mb-3 text-danger">Low Stock Alerts</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Reorder Level</th>
+                                <th>Action Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set low_stock_items = products|selectattr('stock_quantity', 'lt', 120)|list %}
+                            {% for product in low_stock_items %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.category }}</td>
+                                <td>{{ product.stock_quantity // 12 }} dozens</td>
+                                <td>10 dozens</td>
+                                <td>
+                                    {% if product.stock_quantity < 60 %}
+                                    <span class="text-danger">Urgent Restock Required</span>
+                                    {% else %}
+                                    <span class="text-warning">Restock Soon</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No low stock items</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer text-muted">
+                <small>Report generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-report, #printable-report * {
+            visibility: visible;
+        }
+        #printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-header {
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #0066cc !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Category Chart
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        
+        // Count products by category
+        const bigCount = {{ categories.get('Big', [])|length }};
+        const smallCount = {{ categories.get('Small', [])|length }};
+        
+        const categoryChart = new Chart(ctxCategory, {
+            type: 'doughnut',
+            data: {
+                labels: ['Big Products', 'Small Products'],
+                datasets: [{
+                    data: [bigCount, smallCount],
+                    backgroundColor: [
+                        'rgba(0, 102, 204, 0.7)',
+                        'rgba(0, 153, 0, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

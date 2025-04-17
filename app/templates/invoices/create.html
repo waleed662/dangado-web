@@ -1,0 +1,321 @@
+{% extends 'layout.html' %}
+
+{% block title %}Create Invoice | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('invoices.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Create New Invoice</h1>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Invoice Details</h6>
+        </div>
+        <div class="card-body">
+            <form id="invoiceForm">
+                <!-- Customer Selection -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="customer" class="form-label">Customer</label>
+                        <select class="form-select" id="customer" name="customer_id" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="invoice_date" class="form-label">Invoice Date</label>
+                        <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ today }}" required>
+                    </div>
+                </div>
+                
+                <!-- Products Section -->
+                <h5 class="border-bottom pb-2 mb-3">Invoice Items</h5>
+                
+                <div id="items-container">
+                    <!-- Item template - will be duplicated with JavaScript -->
+                    <div class="item-row row mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label">Product</label>
+                            <select class="form-select product-select" name="product_id" required>
+                                <option value="">Select Product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" data-price="{{ product.price }}" data-stock="{{ product.stock_quantity // 12 }}" data-category="{{ product.category }}">
+                                    {{ product.product_name }} - ₦{{ "{:,.2f}".format(product.price) }} per dozen ({{ product.stock_quantity // 12 }} dozens available)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quantity (dozens)</label>
+                            <input type="number" class="form-control quantity-input" name="quantity" min="1" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Unit Price</label>
+                            <input type="text" class="form-control unit-price" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Amount</label>
+                            <input type="text" class="form-control item-total" readonly>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger remove-item mb-2">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <button type="button" id="add-item" class="btn btn-secondary">
+                        <i class="bi bi-plus-lg"></i> Add Item
+                    </button>
+                </div>
+                
+                <!-- Notes Section -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3">CONFIRM YOUR GOODS BEFORE LEAVING PREMISES. WE WILL NOT BE LIABLE FOR ANY SHORTAGE THEREAFTER.</textarea>
+                    </div>
+                </div>
+                
+                <!-- Invoice Totals -->
+                <div class="row justify-content-end">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h6 class="mb-0">Subtotal:</h6>
+                                    <h6 class="mb-0" id="subtotal">₦0.00</h6>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h6 class="mb-0">Discount:</h6>
+                                    <h6 class="mb-0" id="discount">₦0.00</h6>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <h5 class="mb-0">Total:</h5>
+                                    <h5 class="mb-0" id="total">₦0.00</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{{ url_for('invoices.index') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="button" id="submit-invoice" class="btn btn-primary">Create Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remove the initial item row
+        const itemsContainer = document.getElementById('items-container');
+        const itemRow = itemsContainer.querySelector('.item-row');
+        itemsContainer.innerHTML = '';
+        
+        // Add first item row
+        addItemRow();
+        
+        // Add Item button
+        document.getElementById('add-item').addEventListener('click', function() {
+            addItemRow();
+        });
+        
+        // Handle remove item button clicks (using event delegation)
+        itemsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-item') || e.target.parentElement.classList.contains('remove-item')) {
+                const button = e.target.classList.contains('remove-item') ? e.target : e.target.parentElement;
+                const row = button.closest('.item-row');
+                
+                // Don't remove if it's the only row
+                if (itemsContainer.children.length > 1) {
+                    row.remove();
+                    updateTotals();
+                }
+            }
+        });
+        
+        // Handle product selection changes and quantity inputs (using event delegation)
+        itemsContainer.addEventListener('change', function(e) {
+            if (e.target.classList.contains('product-select') || e.target.classList.contains('quantity-input')) {
+                updateItemRow(e.target.closest('.item-row'));
+                updateTotals();
+            }
+        });
+        
+        // Submit invoice
+        document.getElementById('submit-invoice').addEventListener('click', function() {
+            submitInvoice();
+        });
+        
+        // Function to add a new item row
+        function addItemRow() {
+            const newRow = itemRow.cloneNode(true);
+            
+            // Clear input values
+            newRow.querySelector('.product-select').value = '';
+            newRow.querySelector('.quantity-input').value = '';
+            newRow.querySelector('.unit-price').value = '';
+            newRow.querySelector('.item-total').value = '';
+            
+            itemsContainer.appendChild(newRow);
+        }
+        
+        // Function to update an item row based on product selection and quantity
+        function updateItemRow(row) {
+            const productSelect = row.querySelector('.product-select');
+            const quantityInput = row.querySelector('.quantity-input');
+            const unitPriceInput = row.querySelector('.unit-price');
+            const itemTotalInput = row.querySelector('.item-total');
+            
+            if (productSelect.value && quantityInput.value) {
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                const price = parseFloat(selectedOption.dataset.price);
+                const stock = parseInt(selectedOption.dataset.stock);
+                const quantity = parseInt(quantityInput.value);
+                
+                // Check if quantity exceeds stock
+                if (quantity > stock) {
+                    alert(`Only ${stock} dozens available for this product`);
+                    quantityInput.value = stock;
+                    updateItemRow(row); // Recalculate with adjusted quantity
+                    return;
+                }
+                
+                unitPriceInput.value = '₦' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                // Calculate item total (price × quantity × 12 units per dozen)
+                const itemTotal = price * quantity;
+                itemTotalInput.value = '₦' + itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+                unitPriceInput.value = '';
+                itemTotalInput.value = '';
+            }
+        }
+        
+        // Function to update invoice totals
+        function updateTotals() {
+            let subtotal = 0;
+            let discount = 0;
+            
+            // Check if customer is eligible for discount
+            const customerId = document.getElementById('customer').value;
+            let discountEligible = false;
+            
+            if (customerId) {
+                // This would typically be an AJAX call to check discount eligibility
+                // For now, we'll assume the customer is eligible if they have a total over 1,000,000
+                // In production, this should be a server call
+                
+                // Example logic for discount:
+                // discountEligible = (customer monthly purchases >= 1,000,000)
+            }
+            
+            // Calculate totals from all items
+            document.querySelectorAll('.item-row').forEach(row => {
+                const totalInput = row.querySelector('.item-total');
+                if (totalInput.value) {
+                    // Remove currency symbol and commas
+                    const value = totalInput.value.replace('₦', '').replace(/,/g, '');
+                    const amount = parseFloat(value);
+                    subtotal += amount;
+                    
+                    // Calculate discount if applicable
+                    if (discountEligible) {
+                        const productSelect = row.querySelector('.product-select');
+                        if (productSelect.value) {
+                            const selectedOption = productSelect.options[productSelect.selectedIndex];
+                            const category = selectedOption.dataset.category;
+                            
+                            // Apply discount based on category
+                            const discountRate = category === 'Big' ? 0.05 : 0.025;
+                            discount += amount * discountRate;
+                        }
+                    }
+                }
+            });
+            
+            const total = subtotal - discount;
+            
+            // Update displayed totals
+            document.getElementById('subtotal').textContent = '₦' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('discount').textContent = '₦' + discount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('total').textContent = '₦' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        // Function to submit the invoice
+        function submitInvoice() {
+            // Validate form
+            const customer = document.getElementById('customer').value;
+            if (!customer) {
+                alert('Please select a customer');
+                return;
+            }
+            
+            // Check if at least one valid item exists
+            let hasValidItems = false;
+            const items = [];
+            
+            document.querySelectorAll('.item-row').forEach(row => {
+                const productSelect = row.querySelector('.product-select');
+                const quantityInput = row.querySelector('.quantity-input');
+                
+                if (productSelect.value && quantityInput.value) {
+                    hasValidItems = true;
+                    items.push({
+                        product_id: productSelect.value,
+                        quantity: parseInt(quantityInput.value)
+                    });
+                }
+            });
+            
+            if (!hasValidItems) {
+                alert('Please add at least one item to the invoice');
+                return;
+            }
+            
+            // Prepare data
+            const data = {
+                customer_id: customer,
+                invoice_date: document.getElementById('invoice_date').value,
+                notes: document.getElementById('notes').value,
+                items: items
+            };
+            
+            // Submit data using fetch
+            fetch('{{ url_for("invoices.create") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Invoice created successfully!');
+                    window.location.href = '/invoices/view/' + data.invoice_id;
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the invoice.');
+            });
+        }
+    });
+</script>
+{% endblock %}

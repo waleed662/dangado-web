@@ -1,0 +1,131 @@
+{% extends 'layout.html' %}
+
+{% block title %}Monthly Purchases | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('discounts.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Monthly Purchases - {{ month_name }} {{ year }}</h1>
+    </div>
+    
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Options</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == month %}selected{% endif %}>
+                            {{ calendar.month_name[i] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2023, now.year+1) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+                            {{ y }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filters
+                    </button>
+                    <a href="{{ url_for('discounts.monthly_purchases') }}" class="btn btn-secondary">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Monthly Purchases Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Purchase Analysis by Category</h6>
+        </div>
+        <div class="card-body">
+            {% if purchases %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="purchasesTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Category</th>
+                            <th>Total Purchases</th>
+                            <th>Discount Eligible</th>
+                            <th>Potential Discount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('discounts.customer_discounts', id=purchase.customer.id) }}">
+                                    {{ purchase.customer.name }}
+                                </a>
+                            </td>
+                            <td>{{ purchase.category }}</td>
+                            <td>₦{{ "{:,.2f}".format(purchase.total_amount) }}</td>
+                            <td>
+                                {% if purchase.total_amount >= 1000000 %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if purchase.total_amount >= 1000000 %}
+                                    {% if purchase.category == "Big" %}
+                                    ₦{{ "{:,.2f}".format(purchase.total_amount * 0.05) }} (5%)
+                                    {% else %}
+                                    ₦{{ "{:,.2f}".format(purchase.total_amount * 0.025) }} (2.5%)
+                                    {% endif %}
+                                {% else %}
+                                ₦0.00
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('customers.view', id=purchase.customer.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-info-circle"></i> View Customer
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No purchase data found for {{ month_name }} {{ year }}.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#purchasesTable').DataTable({
+            order: [[2, 'desc']], // Sort by total amount, highest first
+            pageLength: 25
+        });
+    });
+</script>
+{% endblock %}
+
+<!-- templates/discounts/ -->
+

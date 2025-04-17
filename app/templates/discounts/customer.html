@@ -1,0 +1,170 @@
+{% extends 'layout.html' %}
+
+{% block title %}Customer Discounts | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('discounts.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Discount History - {{ customer.name }}</h1>
+    </div>
+    
+    <!-- Customer Info Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Customer Information</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th width="30%">Customer ID:</th>
+                            <td>{{ customer.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ customer.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Contact:</th>
+                            <td>{{ customer.contact }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Sales:</th>
+                            <td>₦{{ "{:,.2f}".format(customer.total_sales) }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('customers.view', id=customer.id) }}" class="btn btn-info">
+                            <i class="bi bi-person"></i> View Customer Details
+                        </a>
+                        <a href="{{ url_for('invoices.create') }}?customer_id={{ customer.id }}" class="btn btn-primary">
+                            <i class="bi bi-receipt"></i> Create New Invoice
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Purchases -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Monthly Purchase History</h6>
+        </div>
+        <div class="card-body">
+            {% if purchases %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="purchasesTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Month</th>
+                            <th>Category</th>
+                            <th>Total Purchases</th>
+                            <th>Discount Eligible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td>{{ purchase.year }}</td>
+                            <td>{{ calendar.month_name[purchase.month] }}</td>
+                            <td>{{ purchase.category }}</td>
+                            <td>₦{{ "{:,.2f}".format(purchase.total_amount) }}</td>
+                            <td>
+                                {% if purchase.total_amount >= 1000000 %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No purchase history found for this customer.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Discount Vouchers -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Discount Vouchers</h6>
+        </div>
+        <div class="card-body">
+            {% if vouchers %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="vouchersTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Voucher Number</th>
+                            <th>Month/Year</th>
+                            <th>Category</th>
+                            <th>Purchase Amount</th>
+                            <th>Discount Amount</th>
+                            <th>Status</th>
+                            <th>Applied To</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for voucher in vouchers %}
+                        <tr>
+                            <td>{{ voucher.voucher_number }}</td>
+                            <td>{{ calendar.month_name[voucher.month] }} {{ voucher.year }}</td>
+                            <td>{{ voucher.category }}</td>
+                            <td>₦{{ "{:,.2f}".format(voucher.purchase_amount) }}</td>
+                            <td>₦{{ "{:,.2f}".format(voucher.discount_amount) }}</td>
+                            <td>
+                                {% if voucher.is_applied %}
+                                <span class="badge bg-success">Applied {{ voucher.applied_at.strftime('%Y-%m-%d') }}</span>
+                                {% else %}
+                                <span class="badge bg-warning">Unapplied</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if voucher.is_applied and voucher.applied_to_invoice %}
+                                <a href="{{ url_for('invoices.view', id=voucher.applied_to_invoice.id) }}">
+                                    {{ voucher.applied_to_invoice.invoice_number }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No discount vouchers found for this customer.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTables
+        $('#purchasesTable').DataTable({
+            order: [[0, 'desc'], [1, 'desc']], // Sort by year, month desc
+            pageLength: 10
+        });
+        
+        $('#vouchersTable').DataTable({
+            order: [[1, 'desc']], // Sort by month/year
+            pageLength: 10
+        });
+    });
+</script>
+{% endblock %}

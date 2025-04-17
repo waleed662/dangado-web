@@ -1,0 +1,221 @@
+{% extends 'layout.html' %}
+
+{% block title %}Customer Report | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Customer Analysis Report</h1>
+        
+        <div class="ms-auto">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Printable Report Content -->
+    <div id="printable-report">
+        <!-- Report Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>DANGADO PLASTICS LTD</h3>
+                        <p class="mb-0">No: 16B Sharada Industrial Phase III, Plot: 3 Kano.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h4>CUSTOMER ANALYSIS REPORT</h4>
+                        <p class="mb-0">{{ current_month }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Content -->
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-5">
+                        <h5 class="border-bottom pb-2 mb-3">Customer Overview</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Total Customers</div>
+                                        <div class="h4 mb-0">{{ top_customers|length + regular_customers|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Active This Month</div>
+                                        <div class="h4 mb-0">{{ month_invoices|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-7">
+                        <h5 class="border-bottom pb-2 mb-3">Customer Segment Distribution</h5>
+                        <canvas id="customerSegmentChart" height="220"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Top Customers -->
+                <h5 class="border-bottom pb-2 mb-3">Top Customers (All Time)</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Customer</th>
+                                <th>Contact</th>
+                                <th>Total Sales</th>
+                                <th>First Purchase</th>
+                                <th>Discount Eligible</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in top_customers %}
+                            <tr>
+                                <td>{{ customer.name }}</td>
+                                <td>{{ customer.contact }}</td>
+                                <td>₦{{ "{:,.2f}".format(customer.total_sales) }}</td>
+                                <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if customer.total_sales >= 1000000 %}
+                                    <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No customer data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Monthly Top Customers -->
+                <h5 class="border-bottom pb-2 mb-3">Top Customers (Current Month)</h5>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Invoices</th>
+                                        <th>Total Purchases</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in month_invoices %}
+                                    <tr>
+                                        <td>{{ invoice[1] }}</td>
+                                        <td>{{ invoice[3] }}</td>
+                                        <td>₦{{ "{:,.2f}".format(invoice[2]) }}</td>
+                                        <td>
+                                            {% set percentage = (invoice[2] / month_total * 100) if month_total > 0 else 0 %}
+                                            {{ "{:.1f}%".format(percentage) }}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">No purchases this month</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Monthly Analysis</h6>
+                                <p>Total Sales: <strong>₦{{ "{:,.2f}".format(month_total) }}</strong></p>
+                                <p>Average per Customer: <strong>₦{{ "{:,.2f}".format(month_average) }}</strong></p>
+                                <p>Customers with Discounts: <strong>{{ discount_eligible_count }}</strong></p>
+                                <p>Active Customers: <strong>{{ month_invoices|length }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer text-muted">
+                <small>Report generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-report, #printable-report * {
+            visibility: visible;
+        }
+        #printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-header {
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #0066cc !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Customer Segment Chart
+        const ctxSegment = document.getElementById('customerSegmentChart').getContext('2d');
+        
+        // Calculate customer segments
+        const vipCount = {{ discount_eligible_count }};
+        const regularCount = {{ total_customers - discount_eligible_count }};
+        
+        const segmentChart = new Chart(ctxSegment, {
+            type: 'pie',
+            data: {
+                labels: ['VIP Customers (Discount Eligible)', 'Regular Customers'],
+                datasets: [{
+                    data: [vipCount, regularCount],
+                    backgroundColor: [
+                        'rgba(0, 102, 204, 0.7)',
+                        'rgba(108, 117, 125, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

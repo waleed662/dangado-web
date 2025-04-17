@@ -1,0 +1,170 @@
+{% extends 'layout.html' %}
+
+{% block title %}Customer Statement | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('customers.view', id=customer.id) }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Customer Statement</h1>
+        <a href="#" onclick="window.print()" class="btn btn-outline-primary ms-3">
+            <i class="bi bi-printer"></i> Print Statement
+        </a>
+    </div>
+    
+    <!-- Date Range Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter by Date</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label for="from_date" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="from_date" name="from_date" value="{{ from_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="to_date" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="to_date" name="to_date" value="{{ to_date }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary mb-3">Apply Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Statement printable area -->
+    <div id="printable-statement">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>DANGADO PLASTICS LTD</h3>
+                        <p class="mb-0">No: 16B Sharada Industrial Phase III, Plot: 3 Kano.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h4>ACCOUNT STATEMENT</h4>
+                        <p class="mb-0">{{ from_date }} to {{ to_date }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Customer Details</h5>
+                        <p>
+                            <strong>Customer:</strong> {{ customer.name }}<br>
+                            <strong>Contact:</strong> {{ customer.contact }}<br>
+                            <strong>Customer ID:</strong> {{ customer.id }}
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h5>Statement Summary</h5>
+                        <p>
+                            <strong>Total Purchases:</strong> ₦{{ "{:,.2f}".format(total_purchases) }}<br>
+                            <strong>Total Paid:</strong> ₦{{ "{:,.2f}".format(total_paid) }}<br>
+                            <strong>Outstanding Balance:</strong> ₦{{ "{:,.2f}".format(total_balance) }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Invoice List -->
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Total Amount</th>
+                                <th>Amount Paid</th>
+                                <th>Balance Due</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td>{{ invoice.invoice_number }}</td>
+                                <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ invoice.sales|length }} items</td>
+                                <td>₦{{ "{:,.2f}".format(invoice.total_amount) }}</td>
+                                <td>₦{{ "{:,.2f}".format(invoice.amount_paid) }}</td>
+                                <td>₦{{ "{:,.2f}".format(invoice.balance_due) }}</td>
+                                <td>
+                                    <span class="badge {% if invoice.payment_status == 'paid' %}bg-success{% elif invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ invoice.payment_status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">No invoices found for this period</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3" class="text-end">Totals:</th>
+                                <th>₦{{ "{:,.2f}".format(total_purchases) }}</th>
+                                <th>₦{{ "{:,.2f}".format(total_paid) }}</th>
+                                <th>₦{{ "{:,.2f}".format(total_balance) }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Terms and Signature -->
+                <div class="row mt-5">
+                    <div class="col-md-6">
+                        <h5>Payment Terms</h5>
+                        <p>Please make payments to DANGADO PLASTICS LTD.<br>
+                        For any questions regarding this statement, please contact our accounts department.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p>
+                            <br><br>
+                            _______________________________<br>
+                            Authorized Signature
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-muted">
+                <small>Statement generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printable-statement, #printable-statement * {
+            visibility: visible;
+        }
+        #printable-statement {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-header {
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #0066cc !important;
+        }
+    }
+</style>
+{% endblock %}

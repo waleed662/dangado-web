@@ -1,0 +1,132 @@
+{% extends 'layout.html' %}
+
+{% block title %}Adjust Stock | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('products.view', id=product.id) }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Adjust Stock</h1>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Product ID</label>
+                            <input type="text" class="form-control" value="{{ product.id }}" readonly>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" class="form-control" value="{{ product.product_name }}" readonly>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <input type="text" class="form-control" value="{{ product.category }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₦</span>
+                                <input type="text" class="form-control" value="{{ "{:,.2f}".format(product.price) }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label">Current Stock</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="{{ product.stock_quantity // 12 }}" readonly>
+                                <span class="input-group-text">dozens</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Stock Adjustment</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Adjustment Type</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="add">Add Stock (Production)</option>
+                                <option value="remove">Remove Stock (Adjustment)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity (in dozens)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                                <span class="input-group-text">dozens</span>
+                            </div>
+                        </div>
+                        
+                        <div id="remove-warning" class="alert alert-warning d-none">
+                            <i class="bi bi-exclamation-triangle-fill"></i> 
+                            Warning: Current stock is {{ product.stock_quantity // 12 }} dozens. Removing more will result in negative stock.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('products.view', id=product.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Stock</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeSelect = document.getElementById('type');
+        const quantityInput = document.getElementById('quantity');
+        const removeWarning = document.getElementById('remove-warning');
+        const currentStock = {{ product.stock_quantity // 12 }};
+        
+        function checkStockLevel() {
+            if (typeSelect.value === 'remove') {
+                const quantity = parseInt(quantityInput.value) || 0;
+                if (quantity > currentStock) {
+                    removeWarning.classList.remove('d-none');
+                } else {
+                    removeWarning.classList.add('d-none');
+                }
+            } else {
+                removeWarning.classList.add('d-none');
+            }
+        }
+        
+        typeSelect.addEventListener('change', checkStockLevel);
+        quantityInput.addEventListener('input', checkStockLevel);
+    });
+</script>
+{% endblock %}

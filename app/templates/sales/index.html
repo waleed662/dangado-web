@@ -1,0 +1,163 @@
+{% extends 'layout.html' %}
+
+{% block title %}Sales History | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Sales History</h1>
+        <a href="{{ url_for('sales.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Record Sale
+        </a>
+    </div>
+    
+    <!-- Filter Options -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Sales</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="from_date" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="from_date" name="from_date" value="{{ from_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="to_date" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="to_date" name="to_date" value="{{ to_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="customer_id" class="form-label">Customer</label>
+                    <select class="form-select" id="customer_id" name="customer_id">
+                        <option value="all">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if selected_customer|int == customer.id %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="product_id" class="form-label">Product</label>
+                    <select class="form-select" id="product_id" name="product_id">
+                        <option value="all">All Products</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" {% if request.args.get('product_id')|int == product.id %}selected{% endif %}>
+                            {{ product.product_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('sales.index') }}" class="btn btn-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sales Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Sales Records</h6>
+            <div class="input-group w-25">
+                <input type="text" id="salesSearch" class="form-control" placeholder="Search...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="salesTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Invoice</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Quantity (Dozens)</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                            <!-- Continuing app/templates/sales/index.html -->
+                                <a href="{{ url_for('invoices.view', id=sale.invoice_id) }}">
+                                    {{ sale.invoice.invoice_number }}
+                                </a>
+                            </td>
+                            <td>{{ sale.customer.name }}</td>
+                            <td>{{ sale.product.product_name }}</td>
+                            <td>{{ sale.quantity_sold // 12 }}</td>
+                            <td>₦{{ "{:,.2f}".format(sale.unit_price) }}</td>
+                            <td>₦{{ "{:,.2f}".format(sale.total_price) }}</td>
+                            <td>
+                                <a href="{{ url_for('sales.view', id=sale.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('invoices.view', id=sale.invoice_id) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">No sales records found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Total Sales:</strong> 
+                    <span class="text-success">₦{{ "{:,.2f}".format(sales|sum(attribute='total_price')) if sales else 0 }}</span>
+                </div>
+                <div>
+                    <a href="{{ url_for('reports.sales_report') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-file-earmark-bar-graph"></i> Generate Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('salesSearch');
+        const table = document.getElementById('salesTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent || cells[j].innerText;
+                    
+                    if (cellText.toLowerCase().indexOf(searchTerm) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? '' : 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

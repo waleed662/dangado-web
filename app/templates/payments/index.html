@@ -1,0 +1,156 @@
+{% extends 'layout.html' %}
+
+{% block title %}Payment Records | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Payment Records</h1>
+    </div>
+    
+    <!-- Filter Options -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Payments</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="customer" class="form-label">Customer</label>
+                    <select class="form-select" id="customer" name="customer_id">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if request.args.get('customer_id')|int == customer.id %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="payment_method" class="form-label">Payment Method</label>
+                    <select class="form-select" id="payment_method" name="payment_method">
+                        <option value="">All Methods</option>
+                        <option value="Cash" {% if request.args.get('payment_method') == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="Bank Transfer" {% if request.args.get('payment_method') == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="Check" {% if request.args.get('payment_method') == 'Check' %}selected{% endif %}>Check</option>
+                        <option value="Mobile Money" {% if request.args.get('payment_method') == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{{ url_for('payments.index') }}" class="btn btn-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Payments Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Payment Records</h6>
+            <div class="input-group w-25">
+                <input type="text" id="paymentSearch" class="form-control" placeholder="Search...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="paymentsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Date</th>
+                            <th>Invoice</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.id }}</td>
+                            <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('invoices.view', id=payment.invoice_id) }}">
+                                    {{ payment.invoice.invoice_number }}
+                                </a>
+                            </td>
+                            <td>{{ payment.invoice.customer.name }}</td>
+                            <td>₦{{ "{:,.2f}".format(payment.amount_paid) }}</td>
+                            <td>{{ payment.payment_method }}</td>
+                            <td>
+                                <a href="{{ url_for('payments.view', id=payment.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('payments.receipt', id=payment.id) }}" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No payments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Total Payments:</strong> 
+                    <span class="text-success">₦{{ "{:,.2f}".format(payments|sum(attribute='amount_paid')) if payments else 0 }}</span>
+                </div>
+                <div>
+                    <a href="{{ url_for('reports.payment_report') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-file-earmark-bar-graph"></i> Generate Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('paymentSearch');
+        const table = document.getElementById('paymentsTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent || cells[j].innerText;
+                    
+                    if (cellText.toLowerCase().indexOf(searchTerm) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? '' : 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

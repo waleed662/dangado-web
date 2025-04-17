@@ -1,0 +1,154 @@
+{% extends 'layout.html' %}
+
+{% block title %}Invoices | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Invoices</h1>
+        <a href="{{ url_for('invoices.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Create Invoice
+        </a>
+    </div>
+    
+    <!-- Filter Options -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Invoices</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter_date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="filter_date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter_date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="filter_date_to" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter_customer" class="form-label">Customer</label>
+                    <select class="form-select" id="filter_customer" name="customer_id">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if request.args.get('customer_id')|int == customer.id %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter_status" class="form-label">Payment Status</label>
+                    <select class="form-select" id="filter_status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="paid" {% if request.args.get('status') == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="partial" {% if request.args.get('status') == 'partial' %}selected{% endif %}>Partial</option>
+                        <option value="unpaid" {% if request.args.get('status') == 'unpaid' %}selected{% endif %}>Unpaid</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('invoices.index') }}" class="btn btn-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Invoices Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Invoice List</h6>
+            <div class="input-group w-25">
+                <input type="text" id="invoiceSearch" class="form-control" placeholder="Search...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="invoicesTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                            <th>Amount Paid</th>
+                            <th>Balance Due</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ invoice.invoice_number }}</td>
+                            <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ invoice.customer.name }}</td>
+                            <td>₦{{ "{:,.2f}".format(invoice.total_amount) }}</td>
+                            <td>₦{{ "{:,.2f}".format(invoice.amount_paid) }}</td>
+                            <td>₦{{ "{:,.2f}".format(invoice.balance_due) }}</td>
+                            <td>
+                                <span class="badge {% if invoice.payment_status == 'paid' %}bg-success{% elif invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ invoice.payment_status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('invoices.view', id=invoice.id) }}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if invoice.payment_status != 'paid' %}
+                                    <a href="{{ url_for('payments.create', invoice_id=invoice.id) }}" class="btn btn-sm btn-success">
+                                        <i class="bi bi-cash"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('invoices.generate_pdf', id=invoice.id) }}" class="btn btn-sm btn-secondary">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">No invoices found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('invoiceSearch');
+        const table = document.getElementById('invoicesTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent || cells[j].innerText;
+                    
+                    if (cellText.toLowerCase().indexOf(searchTerm) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? '' : 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

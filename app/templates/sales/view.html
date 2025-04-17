@@ -1,0 +1,111 @@
+{% extends 'layout.html' %}
+
+{% block title %}Sale Details | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Sale Details</h1>
+        <div class="ms-auto">
+            <a href="{{ url_for('invoices.view', id=sale.invoice_id) }}" class="btn btn-primary">
+                <i class="bi bi-receipt"></i> View Invoice
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Sale Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Sale ID:</th>
+                            <td>{{ sale.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Sale Date:</th>
+                            <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Product:</th>
+                            <td>{{ sale.product.product_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Category:</th>
+                            <td>{{ sale.product.category }}</td>
+                        </tr>
+                        <tr>
+                            <th>Quantity:</th>
+                            <td>{{ sale.quantity_sold // 12 }} dozens</td>
+                        </tr>
+                        <tr>
+                            <th>Unit Price:</th>
+                            <td>₦{{ "{:,.2f}".format(sale.unit_price) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Price:</th>
+                            <td><strong>₦{{ "{:,.2f}".format(sale.total_price) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Customer & Invoice Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Customer:</th>
+                            <td>
+                                <a href="{{ url_for('customers.view', id=sale.customer.id) }}">
+                                    {{ sale.customer.name }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Contact:</th>
+                            <td>{{ sale.customer.contact }}</td>
+                        </tr>
+                        <tr>
+                            <th>Invoice Number:</th>
+                            <td>
+                                <a href="{{ url_for('invoices.view', id=sale.invoice.id) }}">
+                                    {{ sale.invoice.invoice_number }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Invoice Status:</th>
+                            <td>
+                                <span class="badge {% if sale.invoice.payment_status == 'paid' %}bg-success{% elif sale.invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ sale.invoice.payment_status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('customers.view', id=sale.customer.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-person"></i> Customer Profile
+                        </a>
+                        <a href="{{ url_for('invoices.view', id=sale.invoice.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-receipt"></i> View Invoice
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

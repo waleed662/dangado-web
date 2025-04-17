@@ -1,0 +1,206 @@
+<!-- templates/discounts/index.html -->
+
+{% extends 'layout.html' %}
+
+{% block title %}Discount Management | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Discount Management</h1>
+    </div>
+    
+    <div class="row">
+        <!-- Stats Cards -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Eligible Purchases ({{ current_month }})
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ eligible_purchases|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cart-check fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Vouchers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_vouchers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-ticket-perforated fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Applied Vouchers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ applied_vouchers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Unapplied Vouchers
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ unapplied_vouchers }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hourglass-split fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Generate Monthly Discounts Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Generate Monthly Discounts</h6>
+        </div>
+        <div class="card-body">
+            <p>Generate discount vouchers for customers who have exceeded the purchase threshold for the selected month.</p>
+            <form method="POST" action="{{ url_for('discounts.generate') }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == current_month %}selected{% endif %}>
+                            {{ calendar.month_name[i] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(current_year-1, current_year+1) %}
+                        <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>
+                            {{ y }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-gear"></i> Generate Discounts
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Links to Discount Management Tools -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Manage Discount Vouchers</h6>
+                </div>
+                <div class="card-body">
+                    <p>View and manage all discount vouchers in the system. Apply vouchers to customer invoices.</p>
+                    <a href="{{ url_for('discounts.vouchers') }}" class="btn btn-primary">
+                        <i class="bi bi-ticket-perforated"></i> View Vouchers
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Monthly Purchase Tracking</h6>
+                </div>
+                <div class="card-body">
+                    <p>View customer monthly purchase data by category and track discount eligibility.</p>
+                    <a href="{{ url_for('discounts.monthly_purchases') }}" class="btn btn-primary">
+                        <i class="bi bi-graph-up"></i> View Monthly Purchases
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Month Eligible Purchases -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Eligible Purchases ({{ current_month }} {{ current_year }})</h6>
+        </div>
+        <div class="card-body">
+            {% if eligible_purchases %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Category</th>
+                            <th>Total Purchases</th>
+                            <th>Discount Rate</th>
+                            <th>Potential Discount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in eligible_purchases %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('discounts.customer_discounts', id=purchase.customer.id) }}">
+                                    {{ purchase.customer.name }}
+                                </a>
+                            </td>
+                            <td>{{ purchase.category }}</td>
+                            <td>₦{{ "{:,.2f}".format(purchase.total_amount) }}</td>
+                            <td>{{ "5%" if purchase.category == "Big" else "2.5%" }}</td>
+                            <td>
+                                {% if purchase.category == "Big" %}
+                                ₦{{ "{:,.2f}".format(purchase.total_amount * 0.05) }}
+                                {% else %}
+                                ₦{{ "{:,.2f}".format(purchase.total_amount * 0.025) }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No eligible purchases found for {{ current_month }} {{ current_year }}.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- templates/discounts/vouchers.html -->
+

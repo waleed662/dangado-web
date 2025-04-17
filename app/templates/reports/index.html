@@ -1,0 +1,109 @@
+{% extends 'layout.html' %}
+
+{% block title %}Reports | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Reports</h1>
+    </div>
+    
+    <div class="row">
+        <!-- Sales Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Sales Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-graph-up text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>View comprehensive sales data for any period. Analyze sales trends, top products, and revenue.</p>
+                    <a href="{{ url_for('reports.sales_report') }}" class="btn btn-primary mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inventory Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Inventory Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-box-seam text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>View current stock levels, low stock alerts, and product performance metrics.</p>
+                    <a href="{{ url_for('reports.inventory_report') }}" class="btn btn-success mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Customer Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>Analyze customer purchasing patterns, top customers, and sales distribution.</p>
+                    <a href="{{ url_for('reports.customer_report') }}" class="btn btn-info mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-cash-coin text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>Track payments received, outstanding balances, and payment methods.</p>
+                    <a href="{{ url_for('reports.payment_report') }}" class="btn btn-warning mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Production Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Production Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-gear text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>View production history, output metrics, and efficiency data.</p>
+                    <a href="{{ url_for('reports.production_report') }}" class="btn btn-secondary mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Discount Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Discount Report</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-percent text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <p>Analyze discount distribution, eligibility, and financial impact.</p>
+                    <a href="{{ url_for('reports.discount_report') }}" class="btn btn-danger mt-2">Generate Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

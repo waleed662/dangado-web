@@ -1,0 +1,116 @@
+{% extends 'layout.html' %}
+
+{% block title %}Payment Details | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('payments.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Payment Details</h1>
+        <div class="ms-auto">
+            <a href="{{ url_for('payments.receipt', id=payment.id) }}" class="btn btn-primary">
+                <i class="bi bi-receipt"></i> View Receipt
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Payment ID:</th>
+                            <td>{{ payment.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date:</th>
+                            <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Amount:</th>
+                            <td><strong class="text-success">₦{{ "{:,.2f}".format(payment.amount_paid) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Payment Method:</th>
+                            <td>{{ payment.payment_method }}</td>
+                        </tr>
+                        {% if payment.notes %}
+                        <tr>
+                            <th>Notes:</th>
+                            <td>{{ payment.notes }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Created On:</th>
+                            <td>{{ payment.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Invoice Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Invoice Number:</th>
+                            <td>
+                                <a href="{{ url_for('invoices.view', id=payment.invoice.id) }}">
+                                    {{ payment.invoice.invoice_number }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Invoice Date:</th>
+                            <td>{{ payment.invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Customer:</th>
+                            <td>
+                                <a href="{{ url_for('customers.view', id=payment.invoice.customer.id) }}">
+                                    {{ payment.invoice.customer.name }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Amount:</th>
+                            <td>₦{{ "{:,.2f}".format(payment.invoice.total_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Amount Paid:</th>
+                            <td>₦{{ "{:,.2f}".format(payment.invoice.amount_paid) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Balance Due:</th>
+                            <td>₦{{ "{:,.2f}".format(payment.invoice.balance_due) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge {% if payment.invoice.payment_status == 'paid' %}bg-success{% elif payment.invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ payment.invoice.payment_status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('invoices.view', id=payment.invoice.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-file-text"></i> View Invoice
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

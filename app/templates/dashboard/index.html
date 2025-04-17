@@ -1,0 +1,308 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+            <p class="mb-4">Welcome to DANGADO PLASTICS Management System</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a href="{{ url_for('invoices.create') }}" class="btn btn-primary">
+                <i class="bi bi-receipt"></i> New Invoice
+            </a>
+            <a href="{{ url_for('production.create') }}" class="btn btn-success">
+                <i class="bi bi-gear"></i> Record Production
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <!-- Monthly Sales Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Monthly Sales</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₦{{ "{:,.2f}".format(monthly_sales) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Products</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ product_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-box-seam fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Customers</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ customer_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-people fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Low Stock Items</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ low_stock|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Sales Chart -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Chart -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Products</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4">
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="row">
+        <!-- Recent Invoices -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Invoices</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in recent_invoices %}
+                                <tr>
+                                    <td><a href="{{ url_for('invoices.view', id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                                    <td>{{ invoice.customer.name }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>₦{{ "{:,.2f}".format(invoice.total_amount) }}</td>
+                                    <td>
+                                        <span class="badge {% if invoice.payment_status == 'paid' %}bg-success{% elif invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ invoice.payment_status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No recent invoices</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('invoices.index') }}" class="btn btn-primary btn-sm">View All Invoices</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Low Stock Alert</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th>In Stock (Dozens)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in low_stock %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('products.view', id=product.id) }}">{{ product.product_name }}</a>
+                                    </td>
+                                    <td>{{ product.category }}</td>
+                                    <td>{{ product.stock_quantity // 12 }}</td>
+                                    <td>
+                                        {% if product.stock_quantity // 12 < 5 %}
+                                        <span class="badge bg-danger">Critical</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Low</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No low stock items</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('production.index') }}" class="btn btn-success btn-sm">Record Production</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sales Chart
+        const salesCtx = document.getElementById('salesChart');
+        if (salesCtx) {
+            new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ last_7_days|tojson }},
+                    datasets: [{
+                        label: 'Daily Sales (₦)',
+                        data: {{ sales_data|tojson }},
+                        backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                        borderColor: 'rgba(0, 102, 204, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₦' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₦' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Products Chart
+        const productsCtx = document.getElementById('productsChart');
+        if (productsCtx) {
+            new Chart(productsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ product_labels|tojson }},
+                    datasets: [{
+                        data: {{ product_values|tojson }},
+                        backgroundColor: [
+                            'rgba(0, 102, 204, 0.7)',
+                            'rgba(0, 153, 0, 0.7)',
+                            'rgba(255, 153, 0, 0.7)',
+                            'rgba(204, 0, 0, 0.7)',
+                            'rgba(153, 51, 255, 0.7)',
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12 }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

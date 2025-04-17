@@ -1,0 +1,107 @@
+{% extends 'layout.html' %}
+
+{% block title %}Record Payment | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('invoices.view', id=invoice.id) }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Record Payment</h1>
+    </div>
+    
+    <!-- Invoice Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Invoice Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Invoice Number:</th>
+                            <td>{{ invoice.invoice_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date:</th>
+                            <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Customer:</th>
+                            <td>{{ invoice.customer.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Amount:</th>
+                            <td>₦{{ "{:,.2f}".format(invoice.total_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Amount Paid:</th>
+                            <td>₦{{ "{:,.2f}".format(invoice.amount_paid) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Balance Due:</th>
+                            <td class="fw-bold text-danger">₦{{ "{:,.2f}".format(invoice.balance_due) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge {% if invoice.payment_status == 'paid' %}bg-success{% elif invoice.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ invoice.payment_status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Form -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Payment Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₦</span>
+                                <input type="number" class="form-control" id="amount" name="amount" step="0.01" max="{{ invoice.balance_due }}" value="{{ invoice.balance_due }}" required>
+                            </div>
+                            <div class="form-text">Maximum amount: ₦{{ "{:,.2f}".format(invoice.balance_due) }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ today }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="Cash">Cash</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Check">Check</option>
+                                <option value="Mobile Money">Mobile Money</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('invoices.view', id=invoice.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-success">Record Payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'layout.html' %}
+
+{% block title %}Record Sale | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Record Sale</h1>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Sale Details</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="customer_id" class="form-label">Customer</label>
+                        <select class="form-select" id="customer_id" name="customer_id" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="date" class="form-label">Sale Date</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="product_id" class="form-label">Product</label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="">Select Product</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.price }}" data-stock="{{ product.stock_quantity // 12 }}">
+                                {{ product.product_name }} - ₦{{ "{:,.2f}".format(product.price) }} ({{ product.stock_quantity // 12 }} dozens available)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="quantity" class="form-label">Quantity (dozens)</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        <div id="stock-warning" class="form-text text-danger d-none">Warning: Exceeds available stock!</div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="unit_price" class="form-label">Unit Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₦</span>
+                            <input type="text" class="form-control" id="unit_price" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="total_price" class="form-label">Total Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₦</span>
+                            <input type="text" class="form-control" id="total_price" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('sales.index') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Record Sale</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('product_id');
+        const quantityInput = document.getElementById('quantity');
+        const unitPriceInput = document.getElementById('unit_price');
+        const totalPriceInput = document.getElementById('total_price');
+        const stockWarning = document.getElementById('stock-warning');
+        
+        // Function to calculate total
+        function calculateTotal() {
+            if (productSelect.value && quantityInput.value) {
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                const price = parseFloat(selectedOption.dataset.price);
+                const stock = parseInt(selectedOption.dataset.stock);
+                const quantity = parseInt(quantityInput.value);
+                
+                // Set unit price
+                unitPriceInput.value = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                // Check stock
+                if (quantity > stock) {
+                    stockWarning.classList.remove('d-none');
+                } else {
+                    stockWarning.classList.add('d-none');
+                }
+                
+                // Calculate total (price × quantity × 12 units per dozen)
+                const total = price * quantity * 12;
+                totalPriceInput.value = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+                unitPriceInput.value = '';
+                totalPriceInput.value = '';
+                stockWarning.classList.add('d-none');
+            }
+        }
+        
+        // Event listeners
+        productSelect.addEventListener('change', calculateTotal);
+        quantityInput.addEventListener('input', calculateTotal);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends 'layout.html' %}
+
+{% block title %}Sales Report | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Sales Report</h1>
+        
+        <div class="ms-auto">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filter Options -->
+    <div class="card shadow mb-4 no-print">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Options</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == month %}selected{% endif %}>
+                            {{ month_names[i-1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(year-2, year+1) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+                            {{ y }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="customer" class="form-label">Customer (Optional)</label>
+                    <select class="form-select" id="customer" name="customer_id">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if request.args.get('customer_id')|int == customer.id %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Category (Optional)</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        <option value="Big" {% if request.args.get('category') == 'Big' %}selected{% endif %}>Big</option>
+                        <option value="Small" {% if request.args.get('category') == 'Small' %}selected{% endif %}>Small</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                    <a href="{{ url_for('reports.sales_report') }}" class="btn btn-secondary">Reset Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Printable Report Content -->
+    <div id="printable-report">
+        <!-- Report Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>DANGADO PLASTICS LTD</h3>
+                        <p class="mb-0">No: 16B Sharada Industrial Phase III, Plot: 3 Kano.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h4>SALES REPORT</h4>
+                        <p class="mb-0">{{ month_name }} {{ year }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Summary -->
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Summary</h5>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body py-3">
+                                        <div class="text-xs text-uppercase mb-1">Total Sales</div>
+                                        <div class="h4 mb-0">₦{{ "{:,.2f}".format(total_sales) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body py-3">
+                                        <div class="text-xs text-uppercase mb-1">Transactions</div>
+                                        <div class="h4 mb-0">{{ sales_data|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Sales Trend</h5>
+                        <canvas id="dailySalesChart" height="150"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Products Breakdown -->
+                <h5 class="border-bottom pb-2 mb-3">Sales by Product</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Quantity (Dozens)</th>
+                                <th>Revenue</th>
+                                <th>% of Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in sales_data %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.category }}</td>
+                                <td>{{ product.quantity // 12 }}</td>
+                                <td>₦{{ "{:,.2f}".format(product.revenue) }}</td>
+                                <td>{{ "{:.1f}%".format(product.revenue / total_sales * 100 if total_sales > 0 else 0) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No sales data found for this period</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3">Total</th>
+                                <th>₦{{ "{:,.2f}".format(total_sales) }}</th>
+                                <th>100%</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Category Distribution -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Category Distribution</h5>
+                        <canvas id="categoryChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Top Customers</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Orders</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for customer in top_customers %}
+                                    <tr>
+                                        <td>{{ customer.name }}</td>
+                                        <td>{{ customer.orders }}</td>
+                                        <td>₦{{ "{:,.2f}".format(customer.amount) }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No customer data available</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer text-muted">
+                <small>Report generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .no-print {
+            display: none;
+        }
+        #printable-report, #printable-report * {
+            visibility: visible;
+        }
+        #printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-header {
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #0066cc !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Daily Sales Chart
+        const ctxDaily = document.getElementById('dailySalesChart').getContext('2d');
+        const dailySalesChart = new Chart(ctxDaily, {
+            type: 'line',
+            data: {
+                labels: {{ daily_sales|map(attribute=0)|list|tojson }},
+                datasets: [{
+                    label: 'Daily Sales (₦)',
+                    data: {{ daily_sales|map(attribute=1)|list|tojson }},
+                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                    borderColor: 'rgba(0, 102, 204, 1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₦' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Category Distribution Chart
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(ctxCategory, {
+            type: 'pie',
+            data: {
+                labels: ['Big', 'Small'],
+                datasets: [{
+                    data: {{ [big_category_sales, small_category_sales]|tojson }},
+                    backgroundColor: [
+                        'rgba(0, 102, 204, 0.7)',
+                        'rgba(0, 153, 0, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

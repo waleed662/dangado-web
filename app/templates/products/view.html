@@ -1,0 +1,194 @@
+{% extends 'layout.html' %}
+
+{% block title %}Product Details | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Product Details</h1>
+        <div class="ms-auto">
+            <a href="{{ url_for('products.edit', id=product.id) }}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit Product
+            </a>
+            <a href="{{ url_for('products.adjust_stock', id=product.id) }}" class="btn btn-success">
+                <i class="bi bi-box-seam"></i> Adjust Stock
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Information</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="30%">Product ID:</th>
+                            <td>{{ product.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Product Name:</th>
+                            <td>{{ product.product_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Category:</th>
+                            <td>
+                                <span class="badge {% if product.category == 'Big' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ product.category }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Price:</th>
+                            <td>₦{{ "{:,.2f}".format(product.price) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Current Stock:</th>
+                            <td>
+                                <span class="{% if product.stock_quantity < 120 %}text-danger{% elif product.stock_quantity < 240 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ product.stock_quantity // 12 }} dozens ({{ product.stock_quantity }} units)
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Stock Value:</th>
+                            <td>₦{{ "{:,.2f}".format(product.price * product.stock_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Added On:</th>
+                            <td>{{ product.created_at.strftime('%Y-%m-%d') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Discount Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Discount Information</h6>
+                </div>
+                <div class="card-body">
+                    <p>This product qualifies for the following discount:</p>
+                    {% if product.category == 'Big' %}
+                    <div class="alert alert-info">
+                        <strong>5% discount</strong> for eligible customers (Big item)
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <strong>2.5% discount</strong> for eligible customers (Small item)
+                    </div>
+                    {% endif %}
+                    <p class="small text-muted">Note: Discounts apply only to customers with monthly purchases over ₦1,000,000.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <!-- Stock Overview -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Stock Overview</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center py-4">
+                                    <h6 class="text-muted mb-2">Current Stock</h6>
+                                    <h1 class="display-4 {% if product.stock_quantity < 120 %}text-danger{% elif product.stock_quantity < 240 %}text-warning{% else %}text-success{% endif %}">
+                                        {{ product.stock_quantity // 12 }}
+                                    </h1>
+                                    <p class="mb-0">dozens</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center py-4">
+                                    <h6 class="text-muted mb-2">This Month</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <h3 class="text-success">+{{ month_production // 12 }}</h3>
+                                            <small>Produced</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <h3 class="text-danger">-{{ month_sales // 12 }}</h3>
+                                            <small>Sold</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock Status -->
+                    <div class="mb-3">
+                        <h6>Stock Status:</h6>
+                        <div class="progress" style="height: 25px;">
+                            {% set stock_pct = (product.stock_quantity / 480) * 100 if product.stock_quantity < 480 else 100 %}
+                            {% set stock_class = 'bg-danger' if stock_pct < 25 else ('bg-warning' if stock_pct < 50 else 'bg-success') %}
+                            <div class="progress-bar {{ stock_class }}" role="progressbar" style="width: {{ stock_pct }}%;" 
+                                aria-valuenow="{{ stock_pct }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ product.stock_quantity // 12 }} dozens
+                            </div>
+                        </div>
+                        <small class="text-muted">Stock level based on minimum recommended inventory (40 dozens)</small>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{{ url_for('products.adjust_stock', id=product.id) }}" class="btn btn-success">
+                            <i class="bi bi-plus-lg"></i> Add Production
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sales History -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Sales</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th>Quantity</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in sales %}
+                                <tr>
+                                    <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ sale.customer.name }}</td>
+                                    <td>{{ sale.quantity_sold // 12 }} dzn</td>
+                                    <td>₦{{ "{:,.2f}".format(sale.total_price) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No recent sales for this product</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('sales.index', product_id=product.id) }}" class="btn btn-sm btn-primary">
+                        View All Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

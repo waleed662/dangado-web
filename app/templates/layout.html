@@ -1,0 +1,259 @@
+<!-- app/templates/layout.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DANGADO PLASTICS{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #f8f9fa;
+            --sidebar-width: 250px;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            min-width: var(--sidebar-width);
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            min-height: 100vh;
+            position: fixed;
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        
+        .sidebar .navbar-brand {
+            color: white;
+            padding: 1.5rem 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.8rem 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            border-radius: 5px;
+            margin: 2px 8px;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        /* Main content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            font-weight: 600;
+        }
+        
+        /* Stats cards */
+        .border-left-primary {
+            border-left: 0.25rem solid var(--primary-color) !important;
+        }
+        
+        .border-left-success {
+            border-left: 0.25rem solid #28a745 !important;
+        }
+        
+        .border-left-info {
+            border-left: 0.25rem solid #17a2b8 !important;
+        }
+        
+        .border-left-warning {
+            border-left: 0.25rem solid #ffc107 !important;
+        }
+        
+        /* Tables */
+        .table th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+        
+        /* Mobile sidebar toggle */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+            }
+            
+            .sidebar.active {
+                margin-left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .main-content.active {
+                margin-left: var(--sidebar-width);
+            }
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="navbar-brand">DANGADO PLASTICS</div>
+            </div>
+            
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('invoices.index') }}" class="nav-link {% if 'invoices' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-receipt"></i> Invoices
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-people"></i> Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('products.index') }}" class="nav-link {% if 'products' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-box-seam"></i> Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('sales.index') }}" class="nav-link {% if 'sales' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-graph-up"></i> Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('production.index') }}" class="nav-link {% if 'production' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-gear"></i> Production
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('payments.index') }}" class="nav-link {% if 'payments' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-cash-coin"></i> Payments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('reports.index') }}" class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-bar-chart"></i> Reports
+                    </a>
+                </li>
+                
+                <li class="nav-item mt-4">
+                    <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+                        <i class="bi bi-person-circle"></i> Profile
+                    </a>
+                </li>
+                {% if current_user.is_admin %}
+                <li class="nav-item">
+                    <a href="{{ url_for('discounts.index') }}" class="nav-link {% if 'discounts' in request.endpoint %}active{% endif %}">
+                        <i class="bi bi-percent"></i> Discount Management
+                    </a>
+                </li>
+                {% endif %}
+                {% if current_user.is_admin %}
+                <li class="nav-item">
+                    <a href="{{ url_for('auth.user_list') }}" class="nav-link {% if request.endpoint == 'auth.user_list' %}active{% endif %}">
+                        <i class="bi bi-people-fill"></i> Manage Users
+                    </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <!-- Page Content -->
+        <div class="main-content">
+            <!-- Top navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4 rounded">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-light d-md-none">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    
+                    <div class="ms-auto d-flex align-items-center">
+                        <div class="me-3">
+                            {{ current_user.username }}
+                        </div>
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-person-circle"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Main content -->
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile sidebar toggle
+            document.getElementById('sidebarCollapse').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.querySelector('.main-content').classList.toggle('active');
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

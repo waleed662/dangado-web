@@ -1,0 +1,248 @@
+{% extends 'layout.html' %}
+
+{% block title %}Payment Report | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Payment Report</h1>
+        
+        <div class="ms-auto">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filter Options -->
+    <div class="card shadow mb-4 no-print">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Options</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="from_date" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="from_date" name="from_date" value="{{ from_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="to_date" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="to_date" name="to_date" value="{{ to_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="payment_method" class="form-label">Payment Method</label>
+                    <select class="form-select" id="payment_method" name="payment_method">
+                        <option value="">All Methods</option>
+                        <option value="Cash" {% if request.args.get('payment_method') == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="Bank Transfer" {% if request.args.get('payment_method') == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="Check" {% if request.args.get('payment_method') == 'Check' %}selected{% endif %}>Check</option>
+                        <option value="Mobile Money" {% if request.args.get('payment_method') == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="customer_id" class="form-label">Customer</label>
+                    <select class="form-select" id="customer_id" name="customer_id">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if request.args.get('customer_id')|int == customer.id %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Generate Report</button>
+                    <a href="{{ url_for('reports.payment_report') }}" class="btn btn-secondary">Reset Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Printable Report Content -->
+    <div id="printable-report">
+        <!-- Report Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>DANGADO PLASTICS LTD</h3>
+                        <p class="mb-0">No: 16B Sharada Industrial Phase III, Plot: 3 Kano.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h4>PAYMENT REPORT</h4>
+                        <p class="mb-0">{{ from_date }} to {{ to_date }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Summary -->
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Payment Summary</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Total Payments</div>
+                                        <div class="h4 mb-0">₦{{ "{:,.2f}".format(total_amount) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body py-3 text-center">
+                                        <div class="text-xs text-uppercase mb-1">Payment Count</div>
+                                        <div class="h4 mb-0">{{ payments|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2 mb-3">Payment Methods</h5>
+                        <canvas id="paymentMethodChart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Payment List -->
+                <h5 class="border-bottom pb-2 mb-3">Payment Details</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ payment.invoice.invoice_number }}</td>
+                                <td>{{ payment.invoice.customer.name }}</td>
+                                <td>{{ payment.payment_method }}</td>
+                                <td>₦{{ "{:,.2f}".format(payment.amount_paid) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">No payments found for this period</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="4" class="text-end">Total:</th>
+                                <th>₦{{ "{:,.2f}".format(total_amount) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- Payment Method Breakdown -->
+                <h5 class="border-bottom pb-2 mb-3">Payment Method Analysis</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Payment Method</th>
+                                <th>Number of Payments</th>
+                                <th>Total Amount</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for method in payment_methods %}
+                            <tr>
+                                <td>{{ method.name }}</td>
+                                <td>{{ method.count }}</td>
+                                <td>₦{{ "{:,.2f}".format(method.amount) }}</td>
+                                <td>{{ "{:.1f}%".format(method.percentage) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer text-muted">
+                <small>Report generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .no-print {
+            display: none;
+        }
+        #printable-report, #printable-report * {
+            visibility: visible;
+        }
+        #printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-header {
+            color: #000 !important;
+            background-color: #f8f9fa !important;
+            border-bottom: 2px solid #0066cc !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Payment Method Chart
+        const ctxMethod = document.getElementById('paymentMethodChart').getContext('2d');
+        
+        const methodLabels = {{ payment_methods|map(attribute='name')|list|tojson }};
+        const methodData = {{ payment_methods|map(attribute='amount')|list|tojson }};
+        const backgroundColors = [
+            'rgba(0, 102, 204, 0.7)',
+            'rgba(0, 153, 0, 0.7)',
+            'rgba(255, 153, 0, 0.7)',
+            'rgba(204, 0, 0, 0.7)'
+        ];
+        
+        const methodChart = new Chart(ctxMethod, {
+            type: 'pie',
+            data: {
+                labels: methodLabels,
+                datasets: [{
+                    data: methodData,
+                    backgroundColor: backgroundColors
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

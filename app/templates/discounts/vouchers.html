@@ -1,0 +1,225 @@
+{% extends 'layout.html' %}
+
+{% block title %}Discount Vouchers | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('discounts.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Discount Vouchers / Coupons</h1>
+        <!-- Continuing templates/discounts/vouchers.html -->
+
+    </div>
+    
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filter Options</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == month %}selected{% endif %}>
+                            {{ calendar.month_name[i] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2023, now.year+1) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>
+                            {{ y }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Vouchers</option>
+                        <option value="applied" {% if status == 'applied' %}selected{% endif %}>Applied</option>
+                        <option value="unapplied" {% if status == 'unapplied' %}selected{% endif %}>Unapplied</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        Apply Filters
+                    </button>
+                    <a href="{{ url_for('discounts.vouchers') }}" class="btn btn-secondary">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Vouchers Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Discount Vouchers</h6>
+        </div>
+        <div class="card-body">
+            {% if vouchers %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="vouchersTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Voucher Number</th>
+                            <th>Customer</th>
+                            <th>Category</th>
+                            <th>Purchase Amount</th>
+                            <th>Discount Amount</th>
+                            <th>Created Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for voucher in vouchers %}
+                        <tr>
+                            <td>{{ voucher.voucher_number }}</td>
+                            <td>
+                                <a href="{{ url_for('discounts.customer_discounts', id=voucher.customer.id) }}">
+                                    {{ voucher.customer.name }}
+                                </a>
+                            </td>
+                            <td>{{ voucher.category }}</td>
+                            <td>₦{{ "{:,.2f}".format(voucher.purchase_amount) }}</td>
+                            <td>₦{{ "{:,.2f}".format(voucher.discount_amount) }}</td>
+                            <td>{{ voucher.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if voucher.is_applied %}
+                                <span class="badge bg-success">Applied</span>
+                                {% else %}
+                                <span class="badge bg-warning">Unapplied</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not voucher.is_applied %}
+                                <button type="button" class="btn btn-sm btn-primary apply-voucher-btn" 
+                                        data-bs-toggle="modal" data-bs-target="#applyVoucherModal"
+                                        data-voucher-id="{{ voucher.id }}"
+                                        data-customer-id="{{ voucher.customer_id }}"
+                                        data-amount="{{ voucher.discount_amount }}">
+                                    Apply
+                                </button>
+                                {% else %}
+                                <a href="{{ url_for('invoices.view', id=voucher.applied_to_invoice_id) }}" class="btn btn-sm btn-info">
+                                    View Invoice
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No vouchers found with the selected filters.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Apply Voucher Modal -->
+<div class="modal fade" id="applyVoucherModal" tabindex="-1" aria-labelledby="applyVoucherModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="applyVoucherModalLabel">Apply Discount Voucher</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="applyVoucherForm" method="POST" action="{{ url_for('discounts.apply_voucher') }}">
+                    <input type="hidden" id="voucher_id" name="voucher_id">
+                    
+                    <div class="mb-3">
+                        <label for="invoice_id" class="form-label">Select Invoice</label>
+                        <select class="form-select" id="invoice_id" name="invoice_id" required>
+                            <option value="">Select an invoice...</option>
+                            <!-- Options will be populated via JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p>Discount Amount: <strong id="discount_amount">₦0.00</strong></p>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Apply Voucher</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#vouchersTable').DataTable({
+            order: [[5, 'desc']], // Sort by created date, newest first
+            pageLength: 25
+        });
+        
+        // Handle Apply Voucher button click
+        const applyBtns = document.querySelectorAll('.apply-voucher-btn');
+        applyBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const voucherId = this.dataset.voucherId;
+                const customerId = this.dataset.customerId;
+                const amount = this.dataset.amount;
+                
+                document.getElementById('voucher_id').value = voucherId;
+                document.getElementById('discount_amount').textContent = '₦' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                
+                // Fetch unpaid invoices for this customer
+                fetchCustomerInvoices(customerId);
+            });
+        });
+        
+        // Function to fetch customer invoices via AJAX
+        function fetchCustomerInvoices(customerId) {
+            const invoiceSelect = document.getElementById('invoice_id');
+            invoiceSelect.innerHTML = '<option value="">Loading invoices...</option>';
+            
+            fetch(`/api/customer/${customerId}/unpaid-invoices`)
+                .then(response => response.json())
+                .then(data => {
+                    invoiceSelect.innerHTML = '<option value="">Select an invoice...</option>';
+                    
+                    if (data.invoices && data.invoices.length > 0) {
+                        data.invoices.forEach(invoice => {
+                            const option = document.createElement('option');
+                            option.value = invoice.id;
+                            option.textContent = `${invoice.invoice_number} - ₦${invoice.balance_due.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} - ${invoice.invoice_date}`;
+                            invoiceSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No unpaid invoices available';
+                        option.disabled = true;
+                        invoiceSelect.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching invoices:', error);
+                    invoiceSelect.innerHTML = '<option value="">Error loading invoices</option>';
+                });
+        }
+    });
+</script>
+{% endblock %}
+
+<!-- templates/discounts/monthly_purchases.html -->
+

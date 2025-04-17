@@ -1,0 +1,87 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit User | DANGADO PLASTICS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('auth.user_list') }}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 mb-0">Edit User</h1>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">User Information</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
+                        <label class="form-check-label" for="is_admin">
+                            Administrator Access
+                        </label>
+                        <div class="form-text">Administrators have full access to all system features and can manage users.</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h6 class="mb-3">Reset Password (Optional)</h6>
+                    <p class="text-muted small">Leave these fields blank if you don't want to change the password.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('auth.user_list') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Update User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const newPassword = document.getElementById('new_password');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        form.addEventListener('submit', function(e) {
+            // Only validate passwords if new password is being set
+            if (newPassword.value) {
+                if (newPassword.value !== confirmPassword.value) {
+                    e.preventDefault();
+                    alert('Passwords do not match!');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
